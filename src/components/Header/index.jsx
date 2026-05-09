@@ -1,4 +1,3 @@
-import Cookies from 'js-cookie'
 import { Link, useNavigate } from 'react-router-dom'
 import { useContext } from 'react'
 
@@ -12,7 +11,7 @@ const Header = () => {
     const { cartCount } = useContext(CartContext)
 
     const logout = () => {
-        Cookies.remove('jwt_token')
+        localStorage.removeItem('jwt_token')
 
         navigate('/login')
     }

@@ -1,8 +1,6 @@
 import { useEffect, useState, useContext } from 'react'
 
-import Cookies from 'js-cookie'
-
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { BsFillStarFill } from 'react-icons/bs'
 
@@ -16,11 +14,10 @@ import './index.css'
 
 const Home = () => {
     const [books, setBooks] = useState([])
-
     const [search, setSearch] = useState('')
-
     const [loading, setLoading] = useState(true)
-
+    const [error, setError] = useState(null)
+    const navigate = useNavigate()
     const { addToCart, increaseQuantity, decreaseQuantity, getQuantity } =
         useContext(CartContext)
 
@@ -30,23 +27,39 @@ const Home = () => {
 
     const getBooks = async () => {
         setLoading(true)
+        setError(null)
 
-        const jwtToken = Cookies.get('jwt_token')
+        const jwtToken = localStorage.getItem('jwt_token')
 
-        const response = await fetch(
-            `https://apis.ccbp.in/book-hub/books?shelf=ALL&search=${search}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${jwtToken}`,
+        if (!jwtToken) {
+            navigate('/login', { replace: true })
+            return
+        }
+
+        try {
+            const response = await fetch(
+                `https://apis.ccbp.in/book-hub/books?shelf=ALL&search=${search}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${jwtToken}`,
+                    },
                 },
-            },
-        )
+            )
 
-        const data = await response.json()
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('jwt_token')
+                    navigate('/login', { replace: true })
+                    return
+                }
+                throw new Error(`API error: ${response.status}`)
+            }
 
-        if (response.ok) {
-            setBooks(data.books)
-
+            const data = await response.json()
+            setBooks(data.books || [])
+            setLoading(false)
+        } catch (err) {
+            setError(err.message)
             setLoading(false)
         }
     }
@@ -67,7 +80,24 @@ const Home = () => {
     }
 
     if (loading) {
-        return <LoaderView />
+        return (
+            <>
+                <Header />
+                <LoaderView />
+            </>
+        )
+    }
+
+    if (error) {
+        return (
+            <>
+                <Header />
+                <div className="error-container">
+                    <p>Error loading books: {error}</p>
+                    <button onClick={getBooks}>Retry</button>
+                </div>
+            </>
+        )
     }
 
     return (

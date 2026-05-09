@@ -1,0 +1,41 @@
+.login-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-form {
+    width: 350px;
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-image {
+    width: 100%;
+}
+
+.login-title {
+    text-align: center;
+}
+
+.login-form input {
+    height: 40px;
+    padding-left: 10px;
+}
+
+.login-btn {
+    height: 40px;
+    border: none;
+    background-color: #0284c7;
+    color: white;
+    border-radius: 5px;
+}
+
+.error-msg {
+    color: red;
+}

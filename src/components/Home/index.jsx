@@ -1,101 +1,73 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useContext } from 'react'
+
+import Cookies from 'js-cookie'
+
+import { Link } from 'react-router-dom'
+
+import { BsFillStarFill } from 'react-icons/bs'
+
+import { CartContext } from '../../context/CartContext'
 
 import Header from '../Header'
-import Footer from '../Footer'
+
 import LoaderView from '../LoaderView'
-import FailureView from '../FailureView'
 
 import './index.css'
 
-const apiStatus = {
-    initial: 'INITIAL',
-    success: 'SUCCESS',
-    failure: 'FAILURE',
-    loading: 'LOADING',
-}
-
 const Home = () => {
     const [books, setBooks] = useState([])
-    const [status, setStatus] = useState(apiStatus.initial)
+
+    const [search, setSearch] = useState('')
+
+    const [loading, setLoading] = useState(true)
+
+    const { addToCart, increaseQuantity, decreaseQuantity, getQuantity } =
+        useContext(CartContext)
 
     useEffect(() => {
         getBooks()
     }, [])
 
-    const navigate = useNavigate()
-
     const getBooks = async () => {
-        setStatus(apiStatus.loading)
+        setLoading(true)
 
-        const token = localStorage.getItem('jwt_token')
-
-        if (!token) {
-            navigate('/login', { replace: true })
-            return
-        }
+        const jwtToken = Cookies.get('jwt_token')
 
         const response = await fetch(
-            'https://apis.ccbp.in/book-hub/top-rated-books',
+            `https://apis.ccbp.in/book-hub/books?shelf=ALL&search=${search}`,
             {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${jwtToken}`,
                 },
             },
         )
 
+        const data = await response.json()
+
         if (response.ok) {
-            const data = await response.json()
             setBooks(data.books)
-            setStatus(apiStatus.success)
-        } else if (response.status === 401) {
-            localStorage.removeItem('jwt_token')
-            navigate('/login', { replace: true })
-        } else {
-            setStatus(apiStatus.failure)
+
+            setLoading(false)
         }
     }
 
-    const renderSuccessView = () => {
-        if (books.length === 0) {
-            return <p className="no-books-message">No books available right now.</p>
-        }
-
-        return (
-            <div className="books-list">
-                {books.map(each => (
-                    <Link to={`/books/${each.id}`} key={each.id} className="book-link">
-                        <div className="book-card">
-                            <img
-                                src={each.cover_pic || each.image_url}
-                                alt={each.title}
-                                className="book-img"
-                            />
-                            <div className="book-meta">
-                                <h3>{each.title}</h3>
-                                <p>{each.author_name}</p>
-                            </div>
-                        </div>
-                    </Link>
-                ))}
-            </div>
-        )
+    const searchBooks = () => {
+        getBooks()
     }
 
-    const renderView = () => {
-        switch (status) {
-            case apiStatus.loading:
-                return <LoaderView />
+    const renderStars = rating => {
+        const rounded = Math.round(rating)
 
-            case apiStatus.success:
-                return renderSuccessView()
+        return Array.from({ length: rounded }, (_, index) => (
+            <BsFillStarFill
+                key={index}
+                className="star-icon"
+            />
+        ))
+    }
 
-            case apiStatus.failure:
-                return <FailureView retry={getBooks} />
-
-            default:
-                return null
-        }
+    if (loading) {
+        return <LoaderView />
     }
 
     return (
@@ -103,22 +75,78 @@ const Home = () => {
             <Header />
 
             <div className="home-container">
-                <div className="home-top">
-                    <h1>Find Your Next Favorite Books?</h1>
+                <div className="search-container">
+                    <input
+                        type="search"
+                        placeholder="Search Books"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
 
-                    <Link to="/shelf">
-                        <button type="button">Find Books</button>
-                    </Link>
+                    <button onClick={searchBooks}>Search</button>
                 </div>
 
-                <div className="slider-container">
-                    <h2>Top Rated Books</h2>
+                <div className="books-container">
+                    {books.map(each => {
+                        const quantity = getQuantity(each.id)
 
-                    {renderView()}
+                        return (
+                            <div className="book-card" key={each.id}>
+                                <Link
+                                    to={`/books/${each.id}`}
+                                    className="book-link"
+                                >
+                                    <img
+                                        src={each.cover_pic}
+                                        alt={each.title}
+                                    />
+
+                                    <h3>{each.title}</h3>
+
+                                    <p>{each.author_name}</p>
+
+                                    <div className="rating-container">
+                                        {renderStars(each.rating)}
+                                    </div>
+
+                                    <h2 className="price">
+                                        ₹499
+                                    </h2>
+                                </Link>
+
+                                {quantity === 0 ? (
+                                    <button
+                                        className="cart-btn"
+                                        onClick={() => addToCart(each)}
+                                    >
+                                        Add To Cart
+                                    </button>
+                                ) : (
+                                    <div className="quantity-box">
+                                        <button
+                                            onClick={() =>
+                                                decreaseQuantity(each.id)
+                                            }
+                                        >
+                                            -
+                                        </button>
+
+                                        <p>{quantity}</p>
+
+                                        <button
+                                            onClick={() =>
+                                                increaseQuantity(each.id)
+                                            }
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
-
-            <Footer />
         </>
     )
 }

@@ -1,120 +1,204 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useContext } from 'react'
+
+import Cookies from 'js-cookie'
+
+import { Link } from 'react-router-dom'
+
+import { BsFillStarFill } from 'react-icons/bs'
+
 import Header from '../Header'
-import Footer from '../Footer'
+
 import LoaderView from '../LoaderView'
-import FailureView from '../FailureView'
+
+import { CartContext } from '../../context/CartContext'
+
 import './index.css'
 
-const apiStatus = {
-  initial: 'INITIAL',
-  success: 'SUCCESS',
-  failure: 'FAILURE',
-  loading: 'LOADING',
-}
-
 const bookshelvesList = [
-  { id: '1', value: 'ALL', label: 'All' },
-  { id: '2', value: 'READ', label: 'Read' },
-  { id: '3', value: 'CURRENTLY_READING', label: 'Currently Reading' },
-  { id: '4', value: 'WANT_TO_READ', label: 'Want to Read' },
+    {
+        id: '1',
+        value: 'ALL',
+        label: 'All',
+    },
+    {
+        id: '2',
+        value: 'READ',
+        label: 'Read',
+    },
+    {
+        id: '3',
+        value: 'CURRENTLY_READING',
+        label: 'Currently Reading',
+    },
+    {
+        id: '4',
+        value: 'WANT_TO_READ',
+        label: 'Want To Read',
+    },
 ]
 
 const Bookshelves = () => {
-  const [books, setBooks] = useState([])
-  const [status, setStatus] = useState(apiStatus.initial)
-  const [activeShelf, setActiveShelf] = useState('ALL')
-  const navigate = useNavigate()
+    const [books, setBooks] = useState([])
 
-  useEffect(() => {
-    getBooks()
-  }, [activeShelf])
+    const [activeShelf, setActiveShelf] = useState('ALL')
 
-  const getBooks = async () => {
-    setStatus(apiStatus.loading)
-    const token = localStorage.getItem('jwt_token')
+    const [search, setSearch] = useState('')
 
-    if (!token) {
-      navigate('/login', { replace: true })
-      return
+    const [loading, setLoading] = useState(true)
+
+    const { addToCart, increaseQuantity, decreaseQuantity, getQuantity } =
+        useContext(CartContext)
+
+    useEffect(() => {
+        getBooks()
+    }, [activeShelf])
+
+    const getBooks = async () => {
+        setLoading(true)
+
+        const jwtToken = Cookies.get('jwt_token')
+
+        const response = await fetch(
+            `https://apis.ccbp.in/book-hub/books?shelf=${activeShelf}&search=${search}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+            },
+        )
+
+        const data = await response.json()
+
+        if (response.ok) {
+            setBooks(data.books)
+
+            setLoading(false)
+        }
     }
 
-    const response = await fetch(
-      `https://apis.ccbp.in/book-hub/books?shelf=${activeShelf}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    )
+    const renderStars = rating => {
+        const rounded = Math.round(rating)
 
-    if (response.ok) {
-      const data = await response.json()
-      setBooks(data.books)
-      setStatus(apiStatus.success)
-    } else if (response.status === 401) {
-      localStorage.removeItem('jwt_token')
-      navigate('/login', { replace: true })
-    } else {
-      setStatus(apiStatus.failure)
-    }
-  }
-
-  const renderBooksView = () => (
-    <ul className="books-grid">
-      {books.map(each => (
-        <li key={each.id}>
-          <Link to={`/books/${each.id}`}>
-            <img
-              src={each.cover_pic || each.image_url}
-              alt={each.title}
-              className="shelf-book-img"
+        return Array.from({ length: rounded }, (_, index) => (
+            <BsFillStarFill
+                key={index}
+                className="star-icon"
             />
-          </Link>
-          <h4>{each.title}</h4>
-          <p>{each.author_name}</p>
-          <p className="avg-rating">Avg Rating {each.avg_rating}</p>
-        </li>
-      ))}
-    </ul>
-  )
-
-  const renderView = () => {
-    switch (status) {
-      case apiStatus.loading:
-        return <LoaderView />
-      case apiStatus.success:
-        return renderBooksView()
-      case apiStatus.failure:
-        return <FailureView retry={getBooks} />
-      default:
-        return null
+        ))
     }
-  }
 
-  return (
-    <>
-      <Header />
-      <div className="bookshelves-container">
-        <div className="shelves-filter">
-          {bookshelvesList.map(each => (
-            <button
-              key={each.id}
-              type="button"
-              onClick={() => setActiveShelf(each.value)}
-              className={`shelf-button ${
-                activeShelf === each.value ? 'active-shelf' : ''
-              }`}
-            >
-              {each.label}
-            </button>
-          ))}
-        </div>
-        <div className="shelves-books-container">{renderView()}</div>
-      </div>
-      <Footer />
-    </>
-  )
+    if (loading) {
+        return <LoaderView />
+    }
+
+    return (
+        <>
+            <Header />
+
+            <div className="bookshelves-container">
+                <div className="sidebar">
+                    <h2>Bookshelves</h2>
+
+                    {bookshelvesList.map(each => (
+                        <button
+                            key={each.id}
+                            className={
+                                activeShelf === each.value
+                                    ? 'active-shelf'
+                                    : 'shelf-btn'
+                            }
+                            onClick={() =>
+                                setActiveShelf(each.value)
+                            }
+                        >
+                            {each.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="books-section">
+                    <div className="search-container">
+                        <input
+                            type="search"
+                            placeholder="Search Books"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+
+                        <button onClick={getBooks}>
+                            Search
+                        </button>
+                    </div>
+
+                    <div className="books-container">
+                        {books.map(each => {
+                            const quantity = getQuantity(each.id)
+
+                            return (
+                                <div
+                                    className="book-card"
+                                    key={each.id}
+                                >
+                                    <Link
+                                        to={`/books/${each.id}`}
+                                        className="book-link"
+                                    >
+                                        <img
+                                            src={each.cover_pic}
+                                            alt={each.title}
+                                        />
+
+                                        <h3>{each.title}</h3>
+
+                                        <p>{each.author_name}</p>
+
+                                        <div className="rating-container">
+                                            {renderStars(each.rating)}
+                                        </div>
+
+                                        <h2 className="price">
+                                            ₹499
+                                        </h2>
+                                    </Link>
+
+                                    {quantity === 0 ? (
+                                        <button
+                                            className="cart-btn"
+                                            onClick={() =>
+                                                addToCart(each)
+                                            }
+                                        >
+                                            Add To Cart
+                                        </button>
+                                    ) : (
+                                        <div className="quantity-box">
+                                            <button
+                                                onClick={() =>
+                                                    decreaseQuantity(each.id)
+                                                }
+                                            >
+                                                -
+                                            </button>
+
+                                            <p>{quantity}</p>
+
+                                            <button
+                                                onClick={() =>
+                                                    increaseQuantity(each.id)
+                                                }
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </div>
+        </>
+    )
 }
 
 export default Bookshelves

@@ -4,6 +4,7 @@ import Login from './components/Login'
 import Home from './components/Home'
 import Bookshelves from './components/Bookshelves'
 import BookDetails from './components/BookDetails'
+import Cart from './components/Cart'
 import ProtectedRoute from './components/ProtectedRoute'
 import NotFound from './components/NotFound'
 
@@ -16,6 +17,15 @@ const App = () => (
       element={
         <ProtectedRoute>
           <Home />
+        </ProtectedRoute>
+      }
+    />
+
+    <Route
+      path="/cart"
+      element={
+        <ProtectedRoute>
+          <Cart />
         </ProtectedRoute>
       }
     />
@@ -37,8 +47,6 @@ const App = () => (
         </ProtectedRoute>
       }
     />
-
-    <Route path="/not-found" element={<NotFound />} />
 
     <Route path="*" element={<Navigate to="/not-found" />} />
   </Routes>

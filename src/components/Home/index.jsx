@@ -22,8 +22,12 @@ const Home = () => {
         useContext(CartContext)
 
     useEffect(() => {
-        getBooks()
-    }, [])
+        const timerId = setTimeout(() => {
+            getBooks()
+        }, 500)
+
+        return () => clearTimeout(timerId)
+    }, [search])
 
     const getBooks = async () => {
         setLoading(true)
@@ -111,6 +115,11 @@ const Home = () => {
                         placeholder="Search Books"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                getBooks()
+                            }
+                        }}
                     />
 
                     <button onClick={searchBooks}>Search</button>

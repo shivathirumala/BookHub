@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 
 import { ThreeDots } from 'react-loader-spinner'
 
@@ -22,30 +22,42 @@ const Cart = () => {
 
     const [selectedMethod, setSelectedMethod] = useState('')
 
+    const [address, setAddress] = useState('')
+
     const [paymentStatus, setPaymentStatus] = useState('')
 
     const [loading, setLoading] = useState(false)
 
+    useEffect(() => {
+        const savedAddress = localStorage.getItem('deliveryAddress')
+        if (savedAddress) {
+            setAddress(savedAddress)
+        }
+    }, [])
+
     const processPayment = () => {
         if (selectedMethod === '') {
             alert('Please select payment method')
-
+            return
+        }
+        if (address.trim() === '') {
+            alert('Please enter delivery address')
             return
         }
 
-        setLoading(true)
+        localStorage.setItem('deliveryAddress', address)
 
+        setLoading(true)
         setPaymentStatus('')
 
         setTimeout(() => {
             const success = Math.random() < 0.7
-
             setLoading(false)
-
             if (success) {
                 setPaymentStatus('success')
-
                 clearCart()
+                alert('Order placed successfully! Your books will be delivered soon.')
+                setShowPayment(false)
             } else {
                 setPaymentStatus('failed')
             }
@@ -130,6 +142,17 @@ const Cart = () => {
                             </button>
 
                             <h2>Select Payment Method</h2>
+
+                            <div className="address-section">
+                                <label htmlFor="address">Delivery Address:</label>
+                                <textarea
+                                    id="address"
+                                    value={address}
+                                    onChange={e => setAddress(e.target.value)}
+                                    placeholder="Enter your delivery address"
+                                    rows="3"
+                                />
+                            </div>
 
                             <div className="payment-options">
                                 <label>
@@ -218,12 +241,6 @@ const Cart = () => {
                                 >
                                     Confirm Payment
                                 </button>
-                            )}
-
-                            {paymentStatus === 'success' && (
-                                <div className="success-msg">
-                                    Payment Successful ✅
-                                </div>
                             )}
 
                             {paymentStatus === 'failed' && (

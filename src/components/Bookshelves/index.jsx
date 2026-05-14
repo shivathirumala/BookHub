@@ -46,8 +46,12 @@ const Bookshelves = () => {
         useContext(CartContext)
 
     useEffect(() => {
-        getBooks()
-    }, [activeShelf])
+        const timerId = setTimeout(() => {
+            getBooks()
+        }, 500)
+
+        return () => clearTimeout(timerId)
+    }, [activeShelf, search])
 
     const getBooks = async () => {
         setLoading(true)
@@ -152,6 +156,11 @@ const Bookshelves = () => {
                             placeholder="Search Books"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    getBooks()
+                                }
+                            }}
                         />
 
                         <button onClick={getBooks}>

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { BsStarFill } from 'react-icons/bs'
+import { BsFillStarFill } from 'react-icons/bs'
 import Header from '../Header'
 import Footer from '../Footer'
 import LoaderView from '../LoaderView'
 import FailureView from '../FailureView'
+import { CartContext } from '../../context/CartContext'
 import './index.css'
 
 const apiStatus = {
@@ -19,6 +20,8 @@ const BookDetails = () => {
   const [book, setBook] = useState({})
   const [status, setStatus] = useState(apiStatus.initial)
   const navigate = useNavigate()
+  const { addToCart, increaseQuantity, decreaseQuantity, getQuantity } =
+    useContext(CartContext)
 
   useEffect(() => {
     getBookDetails()
@@ -54,6 +57,14 @@ const BookDetails = () => {
     }
   }
 
+  const renderStars = rating => {
+    const rounded = Math.round(rating)
+
+    return Array.from({ length: rounded }, (_, index) => (
+      <BsFillStarFill key={index} className="star-icon" />
+    ))
+  }
+
   const renderBookDetails = () => {
     const {
       cover_pic,
@@ -74,13 +85,39 @@ const BookDetails = () => {
           <div className="book-info">
             <h1>{title}</h1>
             <p className="author">by {author_name}</p>
+            <div className="detail-cart-row">
+              {getQuantity(book.id) === 0 ? (
+                <button
+                  className="detail-cart-btn"
+                  type="button"
+                  onClick={() => addToCart(book)}
+                >
+                  Add To Cart
+                </button>
+              ) : (
+                <div className="detail-quantity-box">
+                  <button
+                    type="button"
+                    onClick={() => decreaseQuantity(book.id)}
+                  >
+                    -
+                  </button>
+                  <p>{getQuantity(book.id)}</p>
+                  <button
+                    type="button"
+                    onClick={() => increaseQuantity(book.id)}
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="rating-section">
-              <p className="avg-rating">
-                {avg_rating}
-                <BsStarFill className="star-icon" />
-              </p>
+              <div className="rating-stars">{renderStars(avg_rating)}</div>
+              <p className="avg-rating">{avg_rating}</p>
               <p className="rating-count">{rating_count} Ratings</p>
             </div>
+            <h2 className="detail-price">₹499</h2>
             <p className="about-section-label">About the Book:</p>
             <p className="about-book">{about_book}</p>
           </div>

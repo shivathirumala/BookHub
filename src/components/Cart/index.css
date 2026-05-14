@@ -98,11 +98,22 @@
     cursor: pointer;
 }
 
-.payment-options {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin: 20px 0;
+.address-section {
+    margin-bottom: 20px;
+}
+
+.address-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.address-section textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
 }
 
 .confirm-btn {
